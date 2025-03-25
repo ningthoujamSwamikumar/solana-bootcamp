@@ -1,0 +1,9 @@
+## BLOCKCHAIN
+- A distributed database with special characteristics. 
+- Unlike traditional databases they are unique, transparent, with no central authority, and fully open.
+- Everyone can make payment on blockchain and no one can reverse or stop it. And we call it 'Censorship Resistant'. 
+- Blockchain is also refered to as a ledger because it stores or records all the transaction thats happen on it.
+Data on blockchain are stored on multiple computers across the world, essentially there is no single copy of the blockchain that can be lost or tampered with. Instead datas are stored in multiple copies and verified by checking a block (a bundle of transactions).
+- Decentralisation: one of the main applications of blockchain is in decentralised finance which refered to direct peer to peer transactions without a third party, may it be payment for something, or swapping of currencies. These are usually done through a central or third party authority which requires a fee.
+- Blockchain transactions uses digital signatures to verify the correctness of transactions.
+- Smart contracts: Modern blockchains like Solana allows us to create programs to perform specific functions on the blockchain. they are like apis in traditional tech world except we don't invoked it by request but rather with instructions, and we don't get responses but the changes are rather written to the blockchain from where anyone can read. Smart contracts enables blockchain to perform more than just payments - we can exchange items on agreed terms, we can lend money without a bank, or create a lottery ticker issuer.
