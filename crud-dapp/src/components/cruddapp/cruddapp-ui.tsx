@@ -1,22 +1,51 @@
 'use client'
 
 import { Keypair, PublicKey } from '@solana/web3.js'
-import { useMemo } from 'react'
+import { FormEvent, useMemo, useState } from 'react'
 import { ellipsify } from '../ui/ui-layout'
 import { ExplorerLink } from '../cluster/cluster-ui'
 import { useCruddappProgram, useCruddappProgramAccount } from './cruddapp-data-access'
+import { useWallet } from '@solana/wallet-adapter-react'
+import toast from 'react-hot-toast'
 
 export function CruddappCreate() {
-  const { initialize } = useCruddappProgram()
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const { publicKey: user } = useWallet();
+  const { createJournal } = useCruddappProgram();
+
+  if (!user) {
+    toast("Please connect your wallet!");
+    return (<div>
+      Oops! Something went wrong.
+    </div>);
+  }
+
+  const isFormValid = title.trim() !== '' && content.trim() !== '';
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (user && isFormValid) {
+      createJournal.mutateAsync({ title, content, writer: user });
+    }
+  };
 
   return (
-    <button
-      className="btn btn-xs lg:btn-md btn-primary"
-      onClick={() => initialize.mutateAsync(Keypair.generate())}
-      disabled={initialize.isPending}
-    >
-      Create {initialize.isPending && '...'}
-    </button>
+    <div>
+      <form onSubmit={handleSubmit}>
+        <label htmlFor='title'>Title</label>
+        <input onChange={(e) => setTitle(e.target.value)} id='title' />
+        <label htmlFor='content'>Content</label>
+        <textarea onChange={(e) => setContent(e.target.value)} />
+        <button
+          className="btn btn-xs lg:btn-md btn-primary"
+          type='submit'
+          disabled={createJournal.isPending}
+        >
+          Create {createJournal.isPending && '...'}
+        </button>
+      </form>
+    </div>
   )
 }
 
@@ -54,11 +83,23 @@ export function CruddappList() {
 }
 
 function CruddappCard({ account }: { account: PublicKey }) {
-  const { accountQuery, incrementMutation, setMutation, decrementMutation, closeMutation } = useCruddappProgramAccount({
-    account,
-  })
+  const { publicKey: user } = useWallet();
+  const [content, setContent] = useState("");
 
-  const count = useMemo(() => accountQuery.data?.count ?? 0, [accountQuery.data?.count])
+  const { accountQuery, deleteJournal, updateJournal } = useCruddappProgramAccount({
+    account,
+  });
+
+  const title = useMemo(() => accountQuery.data?.title ?? "", [accountQuery.data?.title]);
+
+  const isFormValid = content.trim() !== '';
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (user && isFormValid) {
+      updateJournal.mutateAsync({ title, content, writer: user });
+    }
+  };
 
   return accountQuery.isLoading ? (
     <span className="loading loading-spinner loading-lg"></span>
@@ -67,36 +108,21 @@ function CruddappCard({ account }: { account: PublicKey }) {
       <div className="card-body items-center text-center">
         <div className="space-y-6">
           <h2 className="card-title justify-center text-3xl cursor-pointer" onClick={() => accountQuery.refetch()}>
-            {count}
+            {title}
           </h2>
+          <p>{accountQuery.data?.content}</p>
           <div className="card-actions justify-around">
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => incrementMutation.mutateAsync()}
-              disabled={incrementMutation.isPending}
-            >
-              Increment
-            </button>
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => {
-                const value = window.prompt('Set value to:', count.toString() ?? '0')
-                if (!value || parseInt(value) === count || isNaN(parseInt(value))) {
-                  return
-                }
-                return setMutation.mutateAsync(parseInt(value))
-              }}
-              disabled={setMutation.isPending}
-            >
-              Set
-            </button>
-            <button
-              className="btn btn-xs lg:btn-md btn-outline"
-              onClick={() => decrementMutation.mutateAsync()}
-              disabled={decrementMutation.isPending}
-            >
-              Decrement
-            </button>
+            <form onSubmit={handleSubmit}>
+              <label htmlFor='content'>Content</label>
+              <textarea placeholder='write your updated content here' onChange={(e) => setContent(e.target.value)} />
+              <button
+                className="btn btn-xs lg:btn-md btn-primary"
+                type='submit'
+                disabled={updateJournal.isPending}
+              >
+                Update Journal {updateJournal.isPending && '...'}
+              </button>
+            </form>
           </div>
           <div className="text-center space-y-4">
             <p>
@@ -108,9 +134,13 @@ function CruddappCard({ account }: { account: PublicKey }) {
                 if (!window.confirm('Are you sure you want to close this account?')) {
                   return
                 }
-                return closeMutation.mutateAsync()
+                if (!accountQuery.data?.title) {
+                  toast("Invalid title!");
+                  return;
+                }
+                return deleteJournal.mutateAsync(accountQuery.data.title)
               }}
-              disabled={closeMutation.isPending}
+              disabled={deleteJournal.isPending}
             >
               Close
             </button>
