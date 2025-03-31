@@ -56,7 +56,7 @@ pub struct UpdateJournal<'info> {
 
   #[account(
     mut,
-    realloc = 8 + (4 + content.len()) + (4 + title.len()),
+    realloc = 8 + Journal::INIT_SPACE-200 + (4 + content.len()),
     realloc::payer = writer,
     realloc::zero = true,
     seeds= [title.as_bytes(), writer.key().as_ref()],
